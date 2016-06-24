@@ -1,0 +1,63 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Typecho
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Typecho 1.0/14.9.2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-09-11 05:50+0000\n"
+"PO-Revision-Date: 2016-06-12 10:28+0800\n"
+"Last-Translator: \n"
+"Language-Team: Mezil Team <doghap@qq.com>\n"
+"Language: ug_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n == 1 ? 0 : 1;\n"
+"X-Generator: Poedit 1.8.6\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+
+msgid "UTF-8"
+msgstr "UTF-8"
+
+msgid "菜单"
+msgstr "تىزىملىك"
+
+msgid "管理菜单"
+msgstr "تىزىملىك باشقۇرۇش"
+
+msgid "自定义链接"
+msgstr "ئۇلانما"
+
+msgid "链接名称"
+msgstr "ئۇلانما نامى"
+
+msgid "链接地址"
+msgstr "ئۇلانما ئادرىسى"
+
+msgid "添加"
+msgstr "قوشۇش"
+
+msgid ""
+"请使用左侧的分类, 页面及自定义链接功能添加菜单项至此。点击每一项后面的箭头可"
+"以看到该菜单项的设置."
+msgstr ""
+"سول تەرەپتىكى سەھىپە، بەت ۋە ئۇلانمىلارنى ئىشلىتىپ تىزىملىك قوشۇڭ. تىزىملىك "
+"ئارقىدىكى ∨ بەلگىسىنى بېسىپ تىزىملىك تەڭشىكىنى كۆرەلەيسىز."
+
+msgid "保存菜单项"
+msgstr "ساقلاش"
+
+msgid "菜单项属性"
+msgstr "ئەسلى قىممەت"
+
+msgid "菜单更新成功"
+msgstr "تىزىملىك يېڭىلاندى"
+
+msgid "自定义class值"
+msgstr "ئىختىيارىي class قىممىتى"
+
+msgid "新标签中打开"
+msgstr "يېڭى خەتكۈشتى ئېچىش"
