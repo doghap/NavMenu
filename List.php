@@ -51,6 +51,10 @@ class NavMenu_List extends NavMenu_Abstract_Nav {
       $this->_nav_resourse = json_decode($this->_nav_resourse['value']);
   }
 
+    /**
+     * @param string $menu 菜单名称
+     * @param null $navOptions 菜单配置
+     */
   public function navMenu($menu = 'default', $navOptions = NULL) {
 
     //初始化一些变量

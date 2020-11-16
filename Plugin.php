@@ -57,8 +57,8 @@ class NavMenu_Plugin implements Typecho_Plugin_Interface {
         }
     }
     
-    public static function navMenu($navOptions = NULL) {
-        Typecho_Widget::widget('NavMenu_List')->navMenu($navOptions);
+    public static function navMenu($menu = 'default', $navOptions = NULL) {
+        Typecho_Widget::widget('NavMenu_List')->navMenu($menu, $navOptions);
     }
 
 }
