@@ -3,15 +3,40 @@
 class NavMenu_Edit extends NavMenu_Abstract_Nav implements Widget_Interface_Do {
 
     private $_nav_resourse;
-    private $_current_level; 
+    private $_current_level;
+
+    private $_nav_menus = [];
+    private $_current_nav = '';
 
     public function __construct($request, $response, $params = NULL) {
         parent::__construct($request, $response, $params);
+
+        $this->_nav_menus = $this->db->fetchRow($this->select()
+            ->where('name = ?', 'navMenus')->limit(1));
+
+        if (!$this->_nav_menus) {
+            $this->_nav_menus['name'] = 'navMenus';
+            $this->_nav_menus['value'] = json_encode(['default']);
+            $this->insert($this->_nav_menus);
+        }
+        $this->_nav_menus = json_decode($this->_nav_menus['value'], true);
+
+        $this->_current_nav = $request->get('current', $this->_nav_menus[0]);
+
+        if(!in_array($this->_current_nav, $this->_nav_menus)){
+            throw new Typecho_Plugin_Exception('你请求的菜单不存在！');
+        }
+
         $this->_nav_resourse = $this->db->fetchRow($this->select()
                         ->where('name = ?', 'navMenuOrder')->limit(1));
         if (!$this->_nav_resourse) {
             $this->_nav_resourse['name'] = 'navMenuOrder';
-            $this->_nav_resourse['value'] = '[]';
+            $this->_nav_resourse['value'] = [];
+            foreach ($this->_nav_menus as $nav_menu) {
+                $this->_nav_resourse['value'][$nav_menu] = [];
+            }
+
+            $this->_nav_resourse['value'] = json_encode($this->_nav_resourse['value']);
             $this->insert($this->_nav_resourse);
         }
         $this->_nav_resourse = json_decode($this->_nav_resourse['value']);
@@ -33,6 +58,38 @@ class NavMenu_Edit extends NavMenu_Abstract_Nav implements Widget_Interface_Do {
         return isset($this->_nav_resourse) ? $this->_nav_resourse : NULL;
     }
 
+    public function menuForm()
+    {
+        $form = new Typecho_Widget_Helper_Form($this->security->getIndex('/action/nav-edit'), Typecho_Widget_Helper_Form::POST_METHOD);
+
+        /** 菜单数据 */
+        $nav_menu = new Typecho_Widget_Helper_Form_Element_Text('nav_menu', NULL, NULL, _t('菜单名称'));
+        $nav_menu->input->setAttribute('id', 'menuForm');
+        $form->addInput($nav_menu);
+
+        $do = new Typecho_Widget_Helper_Form_Element_Hidden('do');
+        $do->value('add-menu');
+        $form->addInput($do);
+
+        /** 提交按钮 */
+        $submit = new Typecho_Widget_Helper_Form_Element_Submit('submit', NULL, _t('添加'));
+        $submit->input->setAttribute('class', 'btn primary');
+        $form->addItem($submit);
+
+        return $form;
+    }
+
+    public function menuList()
+    {
+        foreach ($this->_nav_menus as $nav_menu) {
+            $url = Helper::url(urlencode('NavMenu/panel/nav-menus.php') . '&current=' . $nav_menu);
+            $class = $this->_current_nav === $nav_menu ? 'active' : '';
+            echo <<<HTML
+<li class="w-30 $class"><a href="$url">$nav_menu</a></li>
+HTML;
+        }
+    }
+
     public function form() {
         $form = new Typecho_Widget_Helper_Form($this->security->getIndex('/action/nav-edit'), Typecho_Widget_Helper_Form::POST_METHOD);
 
@@ -46,26 +103,55 @@ class NavMenu_Edit extends NavMenu_Abstract_Nav implements Widget_Interface_Do {
         $do->value('update');
         $form->addInput($do);
 
+
+        $current = new Typecho_Widget_Helper_Form_Element_Hidden('current');
+        $current->value($this->_current_nav);
+        $form->addInput($current);
+
         /** 提交按钮 */
         $submit = new Typecho_Widget_Helper_Form_Element_Submit('submit', NULL, _t('保存设置'));
         $submit->input->setAttribute('class', 'btn primary');
         $form->addItem($submit);
-        $nav_menu_order->value(json_encode($this->_nav_resourse));
+        $nav_menu_order->value(json_encode($this->_nav_resourse->{$this->_current_nav}));
         return $form;
     }
 
     public function action() {
         $this->security->protect();
         $this->on($this->request->is('do=update'))->updateNav();
+        $this->on($this->request->is('do=add-menu'))->addMenu();
+    }
+
+    public function addMenu()
+    {
+        $from = $this->request->from('nav_menu');
+        if(in_array($from['nav_menu'], $this->_nav_menus)){
+            /** 提示信息 */
+            $this->widget('Widget_Notice')->set(_t('菜单已存在'), 'error');
+
+            /** 转向原页 */
+            $this->response->goBack();
+        }
+        $this->_nav_menus[] = $from['nav_menu'];
+        $this->update(array('value' => json_encode($this->_nav_menus)), $this->db->sql()->where('name = ?', 'navMenus'));
+        $this->_nav_resourse->{$from['nav_menu']} = [];
+        $this->update(array('value' => json_encode($this->_nav_resourse)), $this->db->sql()->where('name = ?', 'navMenuOrder'));
+
+        /** 提示信息 */
+        $this->widget('Widget_Notice')->set(_t('菜单新增成功'), 'success');
+
+        /** 转向原页 */
+        $this->response->goBack();
     }
 
     public function updateNav() {
 
         $from = $this->request->from('nav_menu_order');
-        $this->update(array('value' => $from['nav_menu_order']), $this->db->sql()->where('name = ?', 'navMenuOrder'));
+        $this->_nav_resourse->{$this->_current_nav} = json_decode($from['nav_menu_order'], true);
+        $this->update(array('value' => json_encode($this->_nav_resourse)), $this->db->sql()->where('name = ?', 'navMenuOrder'));
 
         /** 设置高亮 */
-        $this->widget('Widget_Notice')->highlight();
+//        $this->widget('Widget_Notice')->highlight();
 
         /** 提示信息 */
         $this->widget('Widget_Notice')->set(_t('菜单更新成功'), 'success');
@@ -77,8 +163,8 @@ class NavMenu_Edit extends NavMenu_Abstract_Nav implements Widget_Interface_Do {
     public function generateMenuList() {
 
         if ($this->_nav_resourse) {
-            if (count($this->_nav_resourse) > 0) {
-                self::generateMenuItems($this->_nav_resourse);
+            if (count($this->_nav_resourse->{$this->_current_nav}) > 0) {
+                self::generateMenuItems($this->_nav_resourse->{$this->_current_nav});
             }
         }
     }

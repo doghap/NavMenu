@@ -17,19 +17,41 @@ class NavMenu_List extends NavMenu_Abstract_Nav {
 
     /** 初始化回调函数 */
     if (function_exists('createNavItemsCallback')) {
-      $this->$_customCreateNavItemsCallback = true;
+      $this->_customCreateNavItemsCallback = true;
     }
 
-    $this->_nav_resourse = $this->db->fetchRow($this->select()->where('name = ?', 'navMenuOrder')->limit(1));
-    if (!$this->_nav_resourse) {
-      $this->_nav_resourse['name'] = 'navMenuOrder';
-      $this->_nav_resourse['value'] = '[]';
-      $this->insert($this->_nav_resourse);
-    }
-    $this->_nav_resourse = json_decode($this->_nav_resourse['value']);
+      $this->_nav_menus = $this->db->fetchRow($this->select()
+          ->where('name = ?', 'navMenus')->limit(1));
+
+      if (!$this->_nav_menus) {
+          $this->_nav_menus['name'] = 'navMenus';
+          $this->_nav_menus['value'] = json_encode(['default']);
+          $this->insert($this->_nav_menus);
+      }
+      $this->_nav_menus = json_decode($this->_nav_menus['value'], true);
+
+      $this->_current_nav = $request->get('current', $this->_nav_menus[0]);
+
+      if(!in_array($this->_current_nav, $this->_nav_menus)){
+          throw new Typecho_Plugin_Exception('你请求的菜单不存在！');
+      }
+
+      $this->_nav_resourse = $this->db->fetchRow($this->select()
+          ->where('name = ?', 'navMenuOrder')->limit(1));
+      if (!$this->_nav_resourse) {
+          $this->_nav_resourse['name'] = 'navMenuOrder';
+          $this->_nav_resourse['value'] = [];
+          foreach ($this->_nav_menus as $nav_menu) {
+              $this->_nav_resourse['value'][$nav_menu] = [];
+          }
+
+          $this->_nav_resourse['value'] = json_encode($this->_nav_resourse['value']);
+          $this->insert($this->_nav_resourse);
+      }
+      $this->_nav_resourse = json_decode($this->_nav_resourse['value']);
   }
 
-  public function navMenu($navOptions = NULL) {
+  public function navMenu($menu = 'default', $navOptions = NULL) {
 
     //初始化一些变量
     $this->_navOptions = Typecho_Config::factory($navOptions);
@@ -41,22 +63,22 @@ class NavMenu_List extends NavMenu_Abstract_Nav {
         'itemClass' => '',
     ));
 
-    $this->stack = $this->_nav_resourse;
+    $this->stack = $this->_nav_resourse->{$menu};
 
     if ($this->have()) {
       if ($this->_navOptions->wrapTag) {
-        echo '<' . $this->_navOptions->wrapTag . (empty($this->_navOptions->wrapClass) ? '' : ' class="' . $this->_navOptions->wrapClass . '"') . (empty($this->_navOptions->wrapId) ? '' : ' id="' . $this->_navOptions->wrapId . '"') . '>';
-        self::generateNavItems($this->_nav_resourse);
+        echo '<' . $this->_navOptions->wrapTag . (empty($this->_navOptions->wrapClass) ? ' class="nav-menu"' : ' class="nav-menu ' . $this->_navOptions->wrapClass . '"') . (empty($this->_navOptions->wrapId) ? '' : ' id="' . $this->_navOptions->wrapId . '"') . '>';
+        self::generateNavItems($this->_nav_resourse->{$menu});
         echo '</' . $this->_navOptions->wrapTag . '>';
       } else {
-        self::generateNavItems($this->_nav_resourse);
+        self::generateNavItems($this->_nav_resourse->{$menu});
       }
 
       $this->stack = $this->_map;
     }
   }
 
-  private function generateNavItems($items) {
+  private function generateNavItems($items, $level = 1) {
 
     $widget_cat = Typecho_Widget::widget('Widget_Metas_Category_List');
     $widget_archive = Typecho_Widget::widget('Widget_Archive');
@@ -102,8 +124,8 @@ class NavMenu_List extends NavMenu_Abstract_Nav {
         }
 
         if (isset($item->children) && count($item->children) > 0) {
-          echo '<ul class="sub_menu">';
-          self::generateNavItems($item->children);
+          echo "<ul class=\"sub_menu level-{$level}\">";
+          self::generateNavItems($item->children, $level + 1);
           echo '</ul>';
         }
         if ($navOptions->itemTag)
